@@ -35,6 +35,7 @@
 
 %{
 using QuantLib::CashFlow;
+using QuantLib::Leg;
 %}
 
 %shared_ptr(CashFlow)
@@ -44,24 +45,29 @@ class CashFlow : public Observable {
   public:
     Real amount() const;
     Date date() const;
+    bool hasOccurred(const Date& refDate = Date()) const;
 };
 
 #if defined(SWIGCSHARP)
-SWIG_STD_VECTOR_ENHANCED( boost::shared_ptr<CashFlow> )
+SWIG_STD_VECTOR_ENHANCED( ext::shared_ptr<CashFlow> )
 #endif
-%template(Leg) std::vector<boost::shared_ptr<CashFlow> >;
-typedef std::vector<boost::shared_ptr<CashFlow> > Leg;
+%template(Leg) std::vector<ext::shared_ptr<CashFlow> >;
+typedef std::vector<ext::shared_ptr<CashFlow> > Leg;
 
+#if defined(SWIGCSHARP)
+SWIG_STD_VECTOR_ENHANCED( Leg )
+#endif
+%template(LegVector) std::vector<Leg>;
 
 // implementations
 
 %{
 using QuantLib::SimpleCashFlow;
+using QuantLib::IndexedCashFlow;
 using QuantLib::Redemption;
 using QuantLib::AmortizingPayment;
 using QuantLib::Coupon;
 using QuantLib::FixedRateCoupon;
-using QuantLib::Leg;
 using QuantLib::FloatingRateCoupon;
 using QuantLib::OvernightIndexedCoupon;
 %}
@@ -84,6 +90,30 @@ class AmortizingPayment : public CashFlow {
     AmortizingPayment(Real amount, const Date& date);
 };
 
+
+%shared_ptr(IndexedCashFlow)
+class IndexedCashFlow : public CashFlow {
+  public:
+    IndexedCashFlow(Real notional,
+                    const ext::shared_ptr<Index>& index,
+                    const Date& baseDate,
+                    const Date& fixingDate,
+                    const Date& paymentDate,
+                    bool growthOnly = false);
+    Real notional() const;
+    Date baseDate() const;
+    Date fixingDate() const;
+    ext::shared_ptr<Index> index() const;
+    bool growthOnly() const;
+};
+
+%inline %{
+    ext::shared_ptr<IndexedCashFlow> as_indexed_cashflow(const ext::shared_ptr<CashFlow>& cf) {
+        return ext::dynamic_pointer_cast<IndexedCashFlow>(cf);
+    }
+%}
+
+
 %shared_ptr(Coupon)
 class Coupon : public CashFlow {
   private:
@@ -103,8 +133,8 @@ class Coupon : public CashFlow {
 };
 
 %inline %{
-    boost::shared_ptr<Coupon> as_coupon(const boost::shared_ptr<CashFlow>& cf) {
-        return boost::dynamic_pointer_cast<Coupon>(cf);
+    ext::shared_ptr<Coupon> as_coupon(const ext::shared_ptr<CashFlow>& cf) {
+        return ext::dynamic_pointer_cast<Coupon>(cf);
     }
 %}
 
@@ -125,9 +155,9 @@ class FixedRateCoupon : public Coupon {
 };
 
 %inline %{
-    boost::shared_ptr<FixedRateCoupon> as_fixed_rate_coupon(
-                                      const boost::shared_ptr<CashFlow>& cf) {
-        return boost::dynamic_pointer_cast<FixedRateCoupon>(cf);
+    ext::shared_ptr<FixedRateCoupon> as_fixed_rate_coupon(
+                                      const ext::shared_ptr<CashFlow>& cf) {
+        return ext::dynamic_pointer_cast<FixedRateCoupon>(cf);
     }
 %}
 
@@ -150,7 +180,7 @@ class FloatingRateCouponPricer {
 };
 
 void setCouponPricer(const Leg&,
-                     const boost::shared_ptr<FloatingRateCouponPricer>&);
+                     const ext::shared_ptr<FloatingRateCouponPricer>&);
 
 %shared_ptr(FloatingRateCoupon)
 class FloatingRateCoupon : public Coupon {
@@ -166,14 +196,14 @@ class FloatingRateCoupon : public Coupon {
     Rate adjustedFixing() const;
     Rate convexityAdjustment() const;
     Real price(const Handle<YieldTermStructure>& discountCurve) const;
-    boost::shared_ptr<InterestRateIndex> index() const;
-    void setPricer(const boost::shared_ptr<FloatingRateCouponPricer>& p);
+    ext::shared_ptr<InterestRateIndex> index() const;
+    void setPricer(const ext::shared_ptr<FloatingRateCouponPricer>& p);
 };
 
 %inline %{
-    boost::shared_ptr<FloatingRateCoupon> as_floating_rate_coupon(
-                                      const boost::shared_ptr<CashFlow>& cf) {
-        return boost::dynamic_pointer_cast<FloatingRateCoupon>(cf);
+    ext::shared_ptr<FloatingRateCoupon> as_floating_rate_coupon(
+                                      const ext::shared_ptr<CashFlow>& cf) {
+        return ext::dynamic_pointer_cast<FloatingRateCoupon>(cf);
     }
 %}
 
@@ -185,7 +215,7 @@ class OvernightIndexedCoupon : public FloatingRateCoupon {
                 Real nominal,
                 const Date& startDate,
                 const Date& endDate,
-                const boost::shared_ptr<OvernightIndex>& overnightIndex,
+                const ext::shared_ptr<OvernightIndex>& overnightIndex,
                 Real gearing = 1.0,
                 Spread spread = 0.0,
                 const Date& refPeriodStart = Date(),
@@ -208,7 +238,7 @@ class CappedFlooredCoupon : public FloatingRateCoupon {
     %feature("kwargs") CappedFlooredCoupon;
     #endif
   public:
-    CappedFlooredCoupon(const boost::shared_ptr<FloatingRateCoupon>& underlying,
+    CappedFlooredCoupon(const ext::shared_ptr<FloatingRateCoupon>& underlying,
                         Rate cap = Null<Rate>(),
                         Rate floor = Null<Rate>());
     Rate cap() const;
@@ -217,7 +247,7 @@ class CappedFlooredCoupon : public FloatingRateCoupon {
     Rate effectiveFloor() const;
     bool isCapped() const;
     bool isFloored() const;
-    void setPricer(const boost::shared_ptr<FloatingRateCouponPricer>& p);
+    void setPricer(const ext::shared_ptr<FloatingRateCouponPricer>& p);
 };
 
 
@@ -237,7 +267,7 @@ class IborCoupon : public FloatingRateCoupon {
     IborCoupon(const Date& paymentDate, Real nominal,
                const Date& startDate, const Date& endDate,
                Integer fixingDays,
-               boost::shared_ptr<IborIndex>& index,
+               ext::shared_ptr<IborIndex>& index,
                Real gearing = 1.0, Spread spread = 0.0,
                const Date& refPeriodStart = Date(),
                const Date& refPeriodEnd = Date(),
@@ -258,7 +288,7 @@ class CappedFlooredIborCoupon : public CappedFlooredCoupon {
     CappedFlooredIborCoupon(const Date& paymentDate, Real nominal,
                             const Date& startDate, const Date& endDate,
                             Integer fixingDays,
-                            boost::shared_ptr<IborIndex>& index,
+                            ext::shared_ptr<IborIndex>& index,
                             Real gearing = 1.0, Spread spread = 0.0,
                             const Rate cap = Null<Rate>(),
                             const Rate floor = Null<Rate>(),
@@ -292,7 +322,7 @@ class BlackIborCouponPricer : public IborCouponPricer {
                                     Handle<OptionletVolatilityStructure>(),
                                     const TimingAdjustment timingAdjustment = Black76,
                                     const Handle<Quote> correlation =
-                                    Handle<Quote>(boost::shared_ptr<Quote>(new SimpleQuote(1.0))));
+                                    Handle<Quote>(ext::shared_ptr<Quote>(new SimpleQuote(1.0))));
 };
 
 %{
@@ -310,7 +340,7 @@ class CmsCoupon : public FloatingRateCoupon {
   public:
     CmsCoupon(const Date& paymentDate, Real nominal,
               const Date& startDate, const Date& endDate,
-              Integer fixingDays, const boost::shared_ptr<SwapIndex>& index,
+              Integer fixingDays, const ext::shared_ptr<SwapIndex>& index,
               Real gearing = 1.0, Spread spread = 0.0,
               const Date& refPeriodStart = Date(),
               const Date& refPeriodEnd = Date(),
@@ -330,7 +360,7 @@ class CmsSpreadCoupon : public FloatingRateCoupon {
                     const Date& startDate,
                     const Date& endDate,
                     Natural fixingDays,
-                    const boost::shared_ptr<SwapSpreadIndex>& index,
+                    const ext::shared_ptr<SwapSpreadIndex>& index,
                     Real gearing = 1.0,
                     Spread spread = 0.0,
                     const Date& refPeriodStart = Date(),
@@ -361,11 +391,11 @@ class CmsCouponPricer : public FloatingRateCouponPricer {
 };
 
 #if defined(SWIGCSHARP)
-SWIG_STD_VECTOR_ENHANCED( boost::shared_ptr<CmsCouponPricer> )
+SWIG_STD_VECTOR_ENHANCED( ext::shared_ptr<CmsCouponPricer> )
 #endif
 namespace std {
     %template(CmsCouponPricerVector)
-        vector<boost::shared_ptr<CmsCouponPricer> >;     
+        vector<ext::shared_ptr<CmsCouponPricer> >;
 }
 
 class GFunctionFactory {
@@ -406,7 +436,7 @@ class CappedFlooredCmsCoupon: public CappedFlooredCoupon {
     CappedFlooredCmsCoupon(
                   const Date& paymentDate, Real nominal,
                   const Date& startDate, const Date& endDate,
-                  Natural fixingDays, const boost::shared_ptr<SwapIndex>& index,
+                  Natural fixingDays, const ext::shared_ptr<SwapIndex>& index,
                   Real gearing = 1.0, Spread spread = 0.0,
                   const Rate cap = Null<Rate>(),
                   const Rate floor = Null<Rate>(),
@@ -427,7 +457,7 @@ class CappedFlooredCmsSpreadCoupon: public CappedFlooredCoupon {
                   const Date& paymentDate, Real nominal,
                   const Date& startDate, const Date& endDate,
                   Natural fixingDays,
-                  const boost::shared_ptr<SwapSpreadIndex>& index,
+                  const ext::shared_ptr<SwapSpreadIndex>& index,
                   Real gearing = 1.0, Spread spread = 0.0,
                   const Rate cap = Null<Rate>(),
                   const Rate floor = Null<Rate>(),
@@ -492,7 +522,7 @@ class CmsSpreadCouponPricer : public FloatingRateCouponPricer {
 class LognormalCmsSpreadPricer : public CmsSpreadCouponPricer {
   public:
     LognormalCmsSpreadPricer(
-            const boost::shared_ptr<CmsCouponPricer>& cmsPricer,
+            const ext::shared_ptr<CmsCouponPricer>& cmsPricer,
             const Handle<Quote> &correlation,
             const Handle<YieldTermStructure> &couponDiscountCurve =
                 Handle<YieldTermStructure>(),
@@ -549,7 +579,7 @@ Leg _FixedRateLeg(const Schedule& schedule,
 %{
 Leg _IborLeg(const std::vector<Real>& nominals,
              const Schedule& schedule,
-             const boost::shared_ptr<Index>& index,
+             const ext::shared_ptr<IborIndex>& index,
              const DayCounter& paymentDayCounter = DayCounter(),
              const BusinessDayConvention paymentConvention = Following,
              const std::vector<Natural>& fixingDays = std::vector<Natural>(),
@@ -562,9 +592,7 @@ Leg _IborLeg(const std::vector<Real>& nominals,
              const Calendar& exCouponCalendar = Calendar(),
              BusinessDayConvention exCouponConvention = Unadjusted,
              bool exCouponEndOfMonth = false) {
-    boost::shared_ptr<IborIndex> libor =
-        boost::dynamic_pointer_cast<IborIndex>(index);
-    return QuantLib::IborLeg(schedule, libor)
+    return QuantLib::IborLeg(schedule, index)
         .withNotionals(nominals)
         .withPaymentDayCounter(paymentDayCounter)
         .withPaymentAdjustment(paymentConvention)
@@ -586,7 +614,7 @@ Leg _IborLeg(const std::vector<Real>& nominals,
 %rename(IborLeg) _IborLeg;
 Leg _IborLeg(const std::vector<Real>& nominals,
              const Schedule& schedule,
-             const boost::shared_ptr<IborIndex>& index,
+             const ext::shared_ptr<IborIndex>& index,
              const DayCounter& paymentDayCounter = DayCounter(),
              const BusinessDayConvention paymentConvention = Following,
              const std::vector<Natural>& fixingDays = std::vector<Natural>(),
@@ -603,15 +631,13 @@ Leg _IborLeg(const std::vector<Real>& nominals,
 %{
 Leg _OvernightLeg(const std::vector<Real>& nominals,
              const Schedule& schedule,
-             const boost::shared_ptr<Index>& index,
+             const ext::shared_ptr<OvernightIndex>& index,
              const DayCounter& paymentDayCounter = DayCounter(),
              const BusinessDayConvention paymentConvention = Following,
              const std::vector<Real>& gearings = std::vector<Real>(),
              const std::vector<Spread>& spreads = std::vector<Spread>(),
              bool telescopicValueDates = false) {
-    boost::shared_ptr<OvernightIndex> overnightindex =
-        boost::dynamic_pointer_cast<OvernightIndex>(index);
-    return QuantLib::OvernightLeg(schedule, overnightindex)
+    return QuantLib::OvernightLeg(schedule, index)
         .withNotionals(nominals)
         .withPaymentDayCounter(paymentDayCounter)
         .withPaymentAdjustment(paymentConvention)
@@ -626,7 +652,7 @@ Leg _OvernightLeg(const std::vector<Real>& nominals,
 %rename(OvernightLeg) _OvernightLeg;
 Leg _OvernightLeg(const std::vector<Real>& nominals,
              const Schedule& schedule,
-             const boost::shared_ptr<Index>& index,
+             const ext::shared_ptr<OvernightIndex>& index,
              const DayCounter& paymentDayCounter = DayCounter(),
              const BusinessDayConvention paymentConvention = Following,
              const std::vector<Real>& gearings = std::vector<Real>(),
@@ -636,7 +662,7 @@ Leg _OvernightLeg(const std::vector<Real>& nominals,
 %{
 Leg _CmsLeg(const std::vector<Real>& nominals,
             const Schedule& schedule,
-            const boost::shared_ptr<Index>& index,
+            const ext::shared_ptr<SwapIndex>& index,
             const DayCounter& paymentDayCounter = DayCounter(),
             const BusinessDayConvention paymentConvention = Following,
             const std::vector<Natural>& fixingDays = std::vector<Natural>(),
@@ -644,10 +670,12 @@ Leg _CmsLeg(const std::vector<Real>& nominals,
             const std::vector<Spread>& spreads = std::vector<Spread>(),
             const std::vector<Rate>& caps = std::vector<Rate>(),
             const std::vector<Rate>& floors = std::vector<Rate>(),
-            bool isInArrears = false) {
-    boost::shared_ptr<SwapIndex> swapIndex =
-        boost::dynamic_pointer_cast<SwapIndex>(index);
-    return QuantLib::CmsLeg(schedule, swapIndex)
+            bool isInArrears = false,
+            const Period& exCouponPeriod = Period(),
+            const Calendar& exCouponCalendar = Calendar(),
+            const BusinessDayConvention exCouponConvention = Unadjusted,
+            bool exCouponEndOfMonth = false) {
+    return QuantLib::CmsLeg(schedule, index)
         .withNotionals(nominals)
         .withPaymentDayCounter(paymentDayCounter)
         .withPaymentAdjustment(paymentConvention)
@@ -656,6 +684,8 @@ Leg _CmsLeg(const std::vector<Real>& nominals,
         .withSpreads(spreads)
         .withCaps(caps)
         .withFloors(floors)
+        .withExCouponPeriod(exCouponPeriod, exCouponCalendar,
+                            exCouponConvention, exCouponEndOfMonth)
         .inArrears(isInArrears);
 }
 %}
@@ -665,7 +695,7 @@ Leg _CmsLeg(const std::vector<Real>& nominals,
 %rename(CmsLeg) _CmsLeg;
 Leg _CmsLeg(const std::vector<Real>& nominals,
             const Schedule& schedule,
-            const boost::shared_ptr<SwapIndex>& index,
+            const ext::shared_ptr<SwapIndex>& index,
             const DayCounter& paymentDayCounter = DayCounter(),
             const BusinessDayConvention paymentConvention = Following,
             const std::vector<Natural>& fixingDays = std::vector<Natural>(),
@@ -673,22 +703,28 @@ Leg _CmsLeg(const std::vector<Real>& nominals,
             const std::vector<Spread>& spreads = std::vector<Spread>(),
             const std::vector<Rate>& caps = std::vector<Rate>(),
             const std::vector<Rate>& floors = std::vector<Rate>(),
-            bool isInArrears = false);
+            bool isInArrears = false,
+            const Period& exCouponPeriod = Period(),
+            const Calendar& exCouponCalendar = Calendar(),
+            const BusinessDayConvention exCouponConvention = Unadjusted,
+            bool exCouponEndOfMonth = false);
 
 %{
 Leg _CmsZeroLeg(const std::vector<Real>& nominals,
                 const Schedule& schedule,
-                const boost::shared_ptr<Index>& index,
+                const ext::shared_ptr<SwapIndex>& index,
                 const DayCounter& paymentDayCounter = DayCounter(),
                 const BusinessDayConvention paymentConvention = Following,
                 const std::vector<Natural>& fixingDays = std::vector<Natural>(),
                 const std::vector<Real>& gearings = std::vector<Real>(),
                 const std::vector<Spread>& spreads = std::vector<Spread>(),
                 const std::vector<Rate>& caps = std::vector<Rate>(),
-                const std::vector<Rate>& floors = std::vector<Rate>()) {
-    boost::shared_ptr<SwapIndex> swapIndex =
-        boost::dynamic_pointer_cast<SwapIndex>(index);
-    return QuantLib::CmsLeg(schedule, swapIndex)
+                const std::vector<Rate>& floors = std::vector<Rate>(),
+                const Period& exCouponPeriod = Period(),
+                const Calendar& exCouponCalendar = Calendar(),
+                const BusinessDayConvention exCouponConvention = Unadjusted,
+                bool exCouponEndOfMonth = false) {
+    return QuantLib::CmsLeg(schedule, index)
         .withNotionals(nominals)
         .withPaymentDayCounter(paymentDayCounter)
         .withPaymentAdjustment(paymentConvention)
@@ -697,6 +733,8 @@ Leg _CmsZeroLeg(const std::vector<Real>& nominals,
         .withSpreads(spreads)
         .withCaps(caps)
         .withFloors(floors)
+        .withExCouponPeriod(exCouponPeriod, exCouponCalendar,
+                            exCouponConvention, exCouponEndOfMonth)
         .withZeroPayments();
 }
 %}
@@ -706,19 +744,23 @@ Leg _CmsZeroLeg(const std::vector<Real>& nominals,
 %rename(CmsZeroLeg) _CmsZeroLeg;
 Leg _CmsZeroLeg(const std::vector<Real>& nominals,
                 const Schedule& schedule,
-                const boost::shared_ptr<SwapIndex>& index,
+                const ext::shared_ptr<SwapIndex>& index,
                 const DayCounter& paymentDayCounter = DayCounter(),
                 const BusinessDayConvention paymentConvention = Following,
                 const std::vector<Natural>& fixingDays = std::vector<Natural>(),
                 const std::vector<Real>& gearings = std::vector<Real>(),
                 const std::vector<Spread>& spreads = std::vector<Spread>(),
                 const std::vector<Rate>& caps = std::vector<Rate>(),
-                const std::vector<Rate>& floors = std::vector<Rate>());
+                const std::vector<Rate>& floors = std::vector<Rate>(),
+                const Period& exCouponPeriod = Period(),
+                const Calendar& exCouponCalendar = Calendar(),
+                const BusinessDayConvention exCouponConvention = Unadjusted,
+                bool exCouponEndOfMonth = false);
 
 %{
 Leg _CmsSpreadLeg(const std::vector<Real>& nominals,
             const Schedule& schedule,
-            const boost::shared_ptr<Index>& index,
+            const ext::shared_ptr<SwapSpreadIndex>& index,
             const DayCounter& paymentDayCounter = DayCounter(),
             const BusinessDayConvention paymentConvention = Following,
             const std::vector<Natural>& fixingDays = std::vector<Natural>(),
@@ -727,9 +769,7 @@ Leg _CmsSpreadLeg(const std::vector<Real>& nominals,
             const std::vector<Rate>& caps = std::vector<Rate>(),
             const std::vector<Rate>& floors = std::vector<Rate>(),
             bool isInArrears = false) {
-    boost::shared_ptr<SwapSpreadIndex> swapSpreadIndex =
-        boost::dynamic_pointer_cast<SwapSpreadIndex>(index);
-    return QuantLib::CmsSpreadLeg(schedule, swapSpreadIndex)
+    return QuantLib::CmsSpreadLeg(schedule, index)
         .withNotionals(nominals)
         .withPaymentDayCounter(paymentDayCounter)
         .withPaymentAdjustment(paymentConvention)
@@ -747,7 +787,7 @@ Leg _CmsSpreadLeg(const std::vector<Real>& nominals,
 %rename(CmsSpreadLeg) _CmsSpreadLeg;
 Leg _CmsSpreadLeg(const std::vector<Real>& nominals,
             const Schedule& schedule,
-            const boost::shared_ptr<SwapSpreadIndex>& index,
+            const ext::shared_ptr<SwapSpreadIndex>& index,
             const DayCounter& paymentDayCounter = DayCounter(),
             const BusinessDayConvention paymentConvention = Following,
             const std::vector<Natural>& fixingDays = std::vector<Natural>(),
@@ -789,7 +829,7 @@ class CashFlows {
 
     %extend {
 
-        static boost::shared_ptr<CashFlow>
+        static ext::shared_ptr<CashFlow>
         previousCashFlow(const Leg& leg,
                          bool includeSettlementDateFlows,
                          Date settlementDate = Date()) {
@@ -798,12 +838,12 @@ class CashFlows {
                     leg, includeSettlementDateFlows, settlementDate);
 
             if (i == leg.rend())
-                return boost::shared_ptr<CashFlow>();
+                return ext::shared_ptr<CashFlow>();
             else
                 return *i;
         }
 
-        static boost::shared_ptr<CashFlow>
+        static ext::shared_ptr<CashFlow>
         nextCashFlow(const Leg& leg,
                      bool includeSettlementDateFlows,
                      Date settlementDate = Date()) {
@@ -812,7 +852,7 @@ class CashFlows {
                     leg, includeSettlementDateFlows, settlementDate);
 
             if (i == leg.end())
-                return boost::shared_ptr<CashFlow>();
+                return ext::shared_ptr<CashFlow>();
             else
                 return *i;
         }
@@ -822,7 +862,7 @@ class CashFlows {
     %extend {
         static Real npv(
                    const Leg& leg,
-                   const boost::shared_ptr<YieldTermStructure>& discountCurve,
+                   const ext::shared_ptr<YieldTermStructure>& discountCurve,
                    Spread zSpread,
                    const DayCounter &dayCounter,
                    Compounding compounding,
@@ -867,7 +907,7 @@ class CashFlows {
     %extend {
         static Real bps(
                    const Leg& leg,
-                   const boost::shared_ptr<YieldTermStructure>& discountCurve,
+                   const ext::shared_ptr<YieldTermStructure>& discountCurve,
                    bool includeSettlementDateFlows,
                    const Date& settlementDate = Date(),
                    const Date& npvDate = Date()) {
@@ -903,7 +943,7 @@ class CashFlows {
     %extend {
         static Rate atmRate(
                    const Leg& leg,
-                   const boost::shared_ptr<YieldTermStructure>& discountCurve,
+                   const ext::shared_ptr<YieldTermStructure>& discountCurve,
                    bool includeSettlementDateFlows,
                    const Date& settlementDate = Date(),
                    const Date& npvDate = Date(),
@@ -973,7 +1013,7 @@ class CashFlows {
 
     static Spread zSpread(const Leg& leg,
              Real npv,
-             const boost::shared_ptr<YieldTermStructure>&,
+             const ext::shared_ptr<YieldTermStructure>&,
              const DayCounter& dayCounter,
              Compounding compounding,
              Frequency frequency,

@@ -18,6 +18,10 @@
 #ifndef quantlib_futures_i
 #define quantlib_futures_i
 
+%include forward.i
+%include indexes.i
+%include options.i
+
 %{
 using QuantLib::Futures;
 using QuantLib::OvernightIndexFuture;
@@ -27,11 +31,25 @@ struct Futures {
     enum Type { IMM, ASX };
 };
 
-class OvernightIndexFuture {
-  private:
-    OvernightIndexFuture();
+%shared_ptr(OvernightIndexFuture)
+class OvernightIndexFuture : public Forward {
   public:
     enum NettingType { Averaging, Compounding };
+
+    %extend {
+        OvernightIndexFuture(const ext::shared_ptr<OvernightIndex>& overnightIndex,
+                             const Date& valueDate,
+                             const Date& maturityDate,
+                             const Handle<YieldTermStructure>& discountCurve,
+                             const Handle<Quote>& convexityAdjustment = Handle<Quote>(),
+                             NettingType subPeriodsNettingType = Compounding) {
+            return new OvernightIndexFuture(overnightIndex, ext::shared_ptr<Payoff>(),
+                                            valueDate, maturityDate, discountCurve,
+                                            convexityAdjustment, subPeriodsNettingType);
+        }
+    }
+
+    Real convexityAdjustment() const;
 };
 
 

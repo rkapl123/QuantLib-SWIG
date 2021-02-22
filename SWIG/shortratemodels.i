@@ -51,6 +51,8 @@ using QuantLib::Vasicek;
 using QuantLib::HullWhite;
 using QuantLib::BlackKarasinski;
 using QuantLib::G2;
+using QuantLib::CoxIngersollRoss;
+using QuantLib::ExtendedCoxIngersollRoss;
 %}
 
 %shared_ptr(OneFactorAffineModel)
@@ -100,6 +102,23 @@ class BlackKarasinski : public ShortRateModel {
     const Handle<YieldTermStructure>& termStructure() const;
 };
 
+%shared_ptr(CoxIngersollRoss)
+class CoxIngersollRoss : public ShortRateModel {
+  public:
+    CoxIngersollRoss(Rate r0= 0.01, Real theta = 0.1, Real k = 0.1,
+                     Real sigma = 0.1);
+    DiscountFactor discount(Time t) const;
+};
+
+%shared_ptr(ExtendedCoxIngersollRoss)
+class ExtendedCoxIngersollRoss : public ShortRateModel {
+  public:
+    ExtendedCoxIngersollRoss(const Handle<YieldTermStructure>& termStructure,
+                             Real theta = 0.1, Real k = 0.1,
+                             Real sigma = 0.1, Real x0 = 0.05);
+    DiscountFactor discount(Time t) const;
+};
+
 %shared_ptr(G2)
 class G2 : public ShortRateModel {
   public:
@@ -127,7 +146,7 @@ using QuantLib::FdHullWhiteSwaptionEngine;
 class JamshidianSwaptionEngine : public PricingEngine {
   public:
     JamshidianSwaptionEngine(
-                         const boost::shared_ptr<OneFactorAffineModel>& model,
+                         const ext::shared_ptr<OneFactorAffineModel>& model,
                          const Handle<YieldTermStructure>& termStructure =
                                                 Handle<YieldTermStructure>());
 };
@@ -135,11 +154,11 @@ class JamshidianSwaptionEngine : public PricingEngine {
 %shared_ptr(TreeSwaptionEngine)
 class TreeSwaptionEngine : public PricingEngine {
   public:
-    TreeSwaptionEngine(const boost::shared_ptr<ShortRateModel>& model,
+    TreeSwaptionEngine(const ext::shared_ptr<ShortRateModel>& model,
                        Size timeSteps,
                        const Handle<YieldTermStructure>& termStructure =
                                                 Handle<YieldTermStructure>());
-    TreeSwaptionEngine(const boost::shared_ptr<ShortRateModel>& model,
+    TreeSwaptionEngine(const ext::shared_ptr<ShortRateModel>& model,
                        const TimeGrid& grid,
                        const Handle<YieldTermStructure>& termStructure =
                                                 Handle<YieldTermStructure>());
@@ -152,7 +171,7 @@ class TreeSwaptionEngine : public PricingEngine {
 %shared_ptr(AnalyticCapFloorEngine)
 class AnalyticCapFloorEngine : public PricingEngine {
   public:
-    AnalyticCapFloorEngine(const boost::shared_ptr<OneFactorAffineModel>& model,
+    AnalyticCapFloorEngine(const ext::shared_ptr<OneFactorAffineModel>& model,
                            const Handle<YieldTermStructure>& termStructure =
                                                 Handle<YieldTermStructure>());
 };
@@ -160,11 +179,11 @@ class AnalyticCapFloorEngine : public PricingEngine {
 %shared_ptr(TreeCapFloorEngine)
 class TreeCapFloorEngine : public PricingEngine {
   public:
-    TreeCapFloorEngine(const boost::shared_ptr<ShortRateModel>& model,
+    TreeCapFloorEngine(const ext::shared_ptr<ShortRateModel>& model,
                        Size timeSteps,
                        const Handle<YieldTermStructure>& termStructure =
                                                 Handle<YieldTermStructure>());
-    TreeCapFloorEngine(const boost::shared_ptr<ShortRateModel>& model,
+    TreeCapFloorEngine(const ext::shared_ptr<ShortRateModel>& model,
                        const TimeGrid& grid,
                        const Handle<YieldTermStructure>& termStructure =
                                                 Handle<YieldTermStructure>());
@@ -173,7 +192,7 @@ class TreeCapFloorEngine : public PricingEngine {
 %shared_ptr(G2SwaptionEngine)
 class G2SwaptionEngine : public PricingEngine {
   public:
-    G2SwaptionEngine(const boost::shared_ptr<G2>& model,
+    G2SwaptionEngine(const ext::shared_ptr<G2>& model,
                      Real range, Size intervals);
 };
 
@@ -181,7 +200,7 @@ class G2SwaptionEngine : public PricingEngine {
 %shared_ptr(FdG2SwaptionEngine)
 class FdG2SwaptionEngine : public PricingEngine {
   public:
-    FdG2SwaptionEngine(const boost::shared_ptr<G2>& model,
+    FdG2SwaptionEngine(const ext::shared_ptr<G2>& model,
                        Size tGrid = 100, Size xGrid = 50, Size yGrid = 50,
                        Size dampingSteps = 0, Real invEps = 1e-5,
                        const FdmSchemeDesc& schemeDesc = FdmSchemeDesc::Hundsdorfer());
@@ -190,10 +209,26 @@ class FdG2SwaptionEngine : public PricingEngine {
 %shared_ptr(FdHullWhiteSwaptionEngine)
 class FdHullWhiteSwaptionEngine : public PricingEngine {
   public:
-    FdHullWhiteSwaptionEngine(const boost::shared_ptr<HullWhite>& model,
+    FdHullWhiteSwaptionEngine(const ext::shared_ptr<HullWhite>& model,
                               Size tGrid = 100, Size xGrid = 100,
                               Size dampingSteps = 0, Real invEps = 1e-5,
                               const FdmSchemeDesc& schemeDesc = FdmSchemeDesc::Douglas());
 };
+
+// other engines
+
+%{
+using QuantLib::AnalyticBSMHullWhiteEngine;
+%}
+
+%shared_ptr(AnalyticBSMHullWhiteEngine)
+class AnalyticBSMHullWhiteEngine : public PricingEngine {
+  public:
+    AnalyticBSMHullWhiteEngine(
+                     Real equityShortRateCorrelation,
+                     const ext::shared_ptr<GeneralizedBlackScholesProcess>&,
+                     const ext::shared_ptr<HullWhite>&);
+};
+
 
 #endif

@@ -184,11 +184,11 @@ class DefaultProbabilityHelper : public Observable {
 };
 
 #if defined(SWIGCSHARP)
-SWIG_STD_VECTOR_ENHANCED( boost::shared_ptr<DefaultProbabilityHelper> )
+SWIG_STD_VECTOR_ENHANCED( ext::shared_ptr<DefaultProbabilityHelper> )
 #endif
 namespace std {
     %template(DefaultProbabilityHelperVector)
-    vector<boost::shared_ptr<DefaultProbabilityHelper> >;
+    vector<ext::shared_ptr<DefaultProbabilityHelper> >;
 }
 
 
@@ -207,7 +207,11 @@ class SpreadCdsHelper : public DefaultProbabilityHelper {
             Real recoveryRate,
             const Handle<YieldTermStructure>& discountCurve,
             bool settlesAccrual = true,
-            bool paysAtDefaultTime = true);
+            bool paysAtDefaultTime = true,
+            const Date& startDate = Date(),
+            const DayCounter& lastPeriodDayCounter = DayCounter(),
+            bool rebatesAccrual = true,
+            CreditDefaultSwap::PricingModel model = CreditDefaultSwap::Midpoint);
     SpreadCdsHelper(
             Rate spread,
             const Period& tenor,
@@ -220,7 +224,11 @@ class SpreadCdsHelper : public DefaultProbabilityHelper {
             Real recoveryRate,
             const Handle<YieldTermStructure>& discountCurve,
             bool settlesAccrual = true,
-            bool paysAtDefaultTime = true);
+            bool paysAtDefaultTime = true,
+            const Date& startDate = Date(),
+            const DayCounter& lastPeriodDayCounter = DayCounter(),
+            bool rebatesAccrual = true,
+            CreditDefaultSwap::PricingModel model = CreditDefaultSwap::Midpoint);
 };
 
 
@@ -241,7 +249,11 @@ class UpfrontCdsHelper : public DefaultProbabilityHelper {
             const Handle<YieldTermStructure>& discountCurve,
             Natural upfrontSettlementDays=0,
             bool settlesAccrual = true,
-            bool paysAtDefaultTime = true);
+            bool paysAtDefaultTime = true,
+            const Date& startDate = Date(),
+            const DayCounter& lastPeriodDayCounter = DayCounter(),
+            bool rebatesAccrual = true,
+            CreditDefaultSwap::PricingModel model = CreditDefaultSwap::Midpoint);
     UpfrontCdsHelper(
             Rate upfront,
             Rate spread,
@@ -256,7 +268,11 @@ class UpfrontCdsHelper : public DefaultProbabilityHelper {
             const Handle<YieldTermStructure>& discountCurve,
             Natural upfrontSettlementDays=0,
             bool settlesAccrual = true,
-            bool paysAtDefaultTime = true);
+            bool paysAtDefaultTime = true,
+            const Date& startDate = Date(),
+            const DayCounter& lastPeriodDayCounter = DayCounter(),
+            bool rebatesAccrual = true,
+            CreditDefaultSwap::PricingModel model = CreditDefaultSwap::Midpoint);
 };
 
 
@@ -291,34 +307,34 @@ class Name : public DefaultProbabilityTermStructure {
   public:
     %extend {
         Name(const Date& referenceDate,
-             const std::vector<boost::shared_ptr<DefaultProbabilityHelper> >& instruments,
+             const std::vector<ext::shared_ptr<DefaultProbabilityHelper> >& instruments,
              const DayCounter& dayCounter,
              Real accuracy = 1.0e-12,
              const Interpolator& i = Interpolator(),
-             const IterativeBootstrap& b = IterativeBootstrap()) {
+             const _IterativeBootstrap& b = _IterativeBootstrap()) {
             return new Name(referenceDate, instruments, dayCounter, accuracy, i,
                             Name::bootstrap_type(b.accuracy, b.minValue, b.maxValue));
         }
         Name(Integer settlementDays, const Calendar& calendar,
-             const std::vector<boost::shared_ptr<DefaultProbabilityHelper> >& instruments,
+             const std::vector<ext::shared_ptr<DefaultProbabilityHelper> >& instruments,
              const DayCounter& dayCounter,
              Real accuracy = 1.0e-12,
              const Interpolator& i = Interpolator(),
-             const IterativeBootstrap& b = IterativeBootstrap()) {
+             const _IterativeBootstrap& b = _IterativeBootstrap()) {
             return new Name(settlementDays, calendar, instruments, dayCounter,
                             accuracy, i, Name::bootstrap_type(b.accuracy, b.minValue, b.maxValue));
         }
         Name(const Date& referenceDate,
-             const std::vector<boost::shared_ptr<DefaultProbabilityHelper> >& instruments,
+             const std::vector<ext::shared_ptr<DefaultProbabilityHelper> >& instruments,
              const DayCounter& dayCounter,
-             const IterativeBootstrap& b) {
+             const _IterativeBootstrap& b) {
             return new Name(referenceDate, instruments, dayCounter, 1e-12,
                             Interpolator(), Name::bootstrap_type(b.accuracy, b.minValue, b.maxValue));
         }
         Name(Integer settlementDays, const Calendar& calendar,
-             const std::vector<boost::shared_ptr<DefaultProbabilityHelper> >& instruments,
+             const std::vector<ext::shared_ptr<DefaultProbabilityHelper> >& instruments,
              const DayCounter& dayCounter,
-             const IterativeBootstrap& b) {
+             const _IterativeBootstrap& b) {
             return new Name(settlementDays, calendar, instruments, dayCounter, 1e-12,
                             Interpolator(), Name::bootstrap_type(b.accuracy, b.minValue, b.maxValue));
         }

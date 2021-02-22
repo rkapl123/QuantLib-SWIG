@@ -24,7 +24,7 @@ import unittest
 
 class FixedRateBondHelperTest(unittest.TestCase):
     def setUp(self):
-        ql.Settings.instance().setEvaluationDate(ql.Date(2, 1, 2010))
+        ql.Settings.instance().evaluationDate = ql.Date(2, 1, 2010)
         self.settlement_days = 3
         self.face_amount = 100.0
         self.redemption = 100.0
@@ -64,13 +64,16 @@ class FixedRateBondHelperTest(unittest.TestCase):
         self.assertEqual(bond.issueDate(), self.issue_date)
         self.assertEqual(bond.nextCouponRate(), self.coupons[0])
 
+    def tearDown(self):
+        ql.Settings.instance().evaluationDate = ql.Date()
+
 
 class OISRateHelperTest(unittest.TestCase):
     def setUp(self):
 
         # Market rates are artificial, just close to real ones.
         self.default_quote_date = ql.Date(26, 8, 2016)
-        ql.Settings.instance().setEvaluationDate(self.default_quote_date)
+        ql.Settings.instance().evaluationDate = self.default_quote_date
         self.build_eur_curve(self.default_quote_date)
 
     def build_eur_curve(self, quotes_date):
@@ -192,7 +195,7 @@ class OISRateHelperTest(unittest.TestCase):
         2018 in TARGET calendar.
         """
         test_date = ql.Date(29, 3, 2018)
-        ql.Settings.instance().setEvaluationDate(test_date)
+        ql.Settings.instance().evaluationDate = test_date
         eonia = ql.Eonia()
         calendar = eonia.fixingCalendar()
         expected_date = calendar.advance(test_date,
@@ -202,6 +205,9 @@ class OISRateHelperTest(unittest.TestCase):
         ois = ql.MakeOIS(ql.Period('1Y'), eonia, -0.003, ql.Period(0, ql.Days))
         print(ois.startDate())
         self.assertEqual(expected_date, ois.startDate())
+
+    def tearDown(self):
+        ql.Settings.instance().evaluationDate = ql.Date()
 
 
 class FxSwapRateHelperTest(unittest.TestCase):
@@ -596,7 +602,7 @@ class FxSwapRateHelperTest(unittest.TestCase):
         self.assertEqual(expected_3M_date, rate_helper.latestDate())
 
     def tearDown(self):
-        ql.Settings.instance().setEvaluationDate(ql.Date())
+        ql.Settings.instance().evaluationDate = ql.Date()
 
 
 if __name__ == "__main__":

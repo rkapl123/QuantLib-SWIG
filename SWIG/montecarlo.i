@@ -80,12 +80,12 @@ template <class GSG>
 class PathGenerator {
   public:
     typedef Sample<Path> sample_type;
-    PathGenerator(const boost::shared_ptr<StochasticProcess>&,
+    PathGenerator(const ext::shared_ptr<StochasticProcess>&,
                       Time length,
                       Size timeSteps,
                       const GSG& generator,
                       bool brownianBridge);
-    PathGenerator(const boost::shared_ptr<StochasticProcess>&,
+    PathGenerator(const ext::shared_ptr<StochasticProcess>&,
                       const TimeGrid& timeGrid,
                       const GSG& generator,
                       bool brownianBridge);
@@ -134,30 +134,42 @@ class MultiPath {
     }
 };
 
-%{
-typedef QuantLib::MultiPathGenerator<GaussianRandomSequenceGenerator>
-    GaussianMultiPathGenerator;
-%}
 %template(SampleMultiPath) Sample<MultiPath>;
-class GaussianMultiPathGenerator {
+
+%{
+using QuantLib::MultiPathGenerator;
+%}
+
+template <class GSG>
+class MultiPathGenerator {
   public:
+    typedef Sample<MultiPath> sample_type;
+    MultiPathGenerator(const ext::shared_ptr<StochasticProcess>&,
+                       const TimeGrid& timeGrid,
+                       const GSG& generator,
+                       bool brownianBridge = false);
     %extend {
-      GaussianMultiPathGenerator(
-                   const boost::shared_ptr<StochasticProcess>& process,
+      MultiPathGenerator(
+                   const ext::shared_ptr<StochasticProcess>& process,
                    const std::vector<Time>& times,
-                   const GaussianRandomSequenceGenerator& generator,
+                   const GSG& generator,
                    bool brownianBridge = false) {
-          return new GaussianMultiPathGenerator(process,
-                                                QuantLib::TimeGrid(
-                                                    times.begin(),
-                                                    times.end()),
-                                                generator,
-                                                brownianBridge);
+          return new MultiPathGenerator<GSG>(process,
+                                             TimeGrid(
+                                                 times.begin(),
+                                                 times.end()),
+                                             generator,
+                                             brownianBridge);
       }
     }
-    Sample<MultiPath> next() const;
-	Sample<MultiPath> antithetic() const;
+    const sample_type& next() const;
+    const sample_type& antithetic() const;
 };
+
+%template(GaussianMultiPathGenerator)
+    MultiPathGenerator<GaussianRandomSequenceGenerator>;
+%template(GaussianSobolMultiPathGenerator)
+    MultiPathGenerator<GaussianLowDiscrepancySequenceGenerator>;
 
 %{
 using QuantLib::BrownianBridge;

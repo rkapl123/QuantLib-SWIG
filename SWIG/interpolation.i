@@ -4,7 +4,7 @@
  Copyright (C) 2002, 2003 Ferdinando Ametrano
  Copyright (C) 2003, 2004, 2008 StatPro Italia srl
  Copyright (C) 2005 Dominic Thuillier
- Copyright (C) 2018 Matthias Lungwitz
+ Copyright (C) 2018, 2020 Matthias Lungwitz
  
  This file is part of QuantLib, a free-software/open-source library
  for financial quantitative analysts and developers - http://quantlib.org/
@@ -24,6 +24,7 @@
 #define quantlib_interpolation_i
 
 %include linearalgebra.i
+%include optimizers.i
 
 %{
 // safe versions which copy their arguments
@@ -151,6 +152,7 @@ using QuantLib::ForwardFlat;
 using QuantLib::Linear;
 using QuantLib::LogLinear;
 using QuantLib::Cubic;
+using QuantLib::Bicubic;
 using QuantLib::ConvexMonotone;
 
 class MonotonicCubic : public Cubic {
@@ -203,6 +205,7 @@ struct ForwardFlat {};
 struct Linear {};
 struct LogLinear {};
 struct Cubic {};
+struct Bicubic {};
 struct MonotonicCubic {};
 struct DefaultLogCubic {};
 struct MonotonicLogCubic {};
@@ -214,6 +217,88 @@ struct ConvexMonotone {
                    Real monotonicity = 0.7,
                    bool forcePositive = true);
 };
+
+
+
+%{
+// safe version which copies its arguments
+class SafeSABRInterpolation {
+  public:
+    SafeSABRInterpolation(const Array& x, const Array& y,
+                          Time t,
+                          Real forward,
+                          Real alpha,
+                          Real beta,
+                          Real nu,
+                          Real rho,
+                          bool alphaIsFixed,
+                          bool betaIsFixed,
+                          bool nuIsFixed,
+                          bool rhoIsFixed,
+                          bool vegaWeighted = true,
+                          const ext::shared_ptr<EndCriteria>& endCriteria
+                                  = ext::shared_ptr<EndCriteria>(),
+                          const ext::shared_ptr<OptimizationMethod>& optMethod
+                                  = ext::shared_ptr<OptimizationMethod>(),
+                          const Real errorAccept=0.0020,
+                          const bool useMaxError=false,
+                          const Size maxGuesses=50,
+			  const Real shift = 0.0)
+    : x_(x), y_(y), forward_(forward),
+      f_(x_.begin(),x_.end(),y_.begin(),
+         t, forward_, alpha, beta, nu, rho,
+         alphaIsFixed, betaIsFixed,
+         nuIsFixed, rhoIsFixed,
+         vegaWeighted, endCriteria, optMethod,
+         errorAccept, useMaxError, maxGuesses, shift) {f_.update();}
+    Real operator()(Real x, bool allowExtrapolation=false) const {
+        return f_(x, allowExtrapolation);
+    }
+    Real alpha() const {return f_.alpha();}
+    Real beta() const {return f_.beta();}
+    Real rho() const {return f_.rho();}
+    Real nu() const {return f_.nu();}
+    
+  private:
+    Array x_, y_;  // passed via iterators, need to stay alive
+    Real forward_; // passed by reference, same
+    QuantLib::SABRInterpolation f_;
+};
+%}
+
+%rename(SABRInterpolation) SafeSABRInterpolation;
+class SafeSABRInterpolation {
+    #if defined(SWIGCSHARP)
+    %rename(call) operator();
+    #endif
+  public:
+    SafeSABRInterpolation(const Array& x, const Array& y,
+                          Time t,
+                          Real forward,
+                          Real alpha,
+                          Real beta,
+                          Real nu,
+                          Real rho,
+                          bool alphaIsFixed,
+                          bool betaIsFixed,
+                          bool nuIsFixed,
+                          bool rhoIsFixed,
+                          bool vegaWeighted = true,
+                          const ext::shared_ptr<EndCriteria>& endCriteria
+                                  = ext::shared_ptr<EndCriteria>(),
+                          const ext::shared_ptr<OptimizationMethod>& optMethod
+                                  = ext::shared_ptr<OptimizationMethod>(),
+                          const Real errorAccept=0.0020,
+                          const bool useMaxError=false,
+                          const Size maxGuesses=50,
+			  const Real shift = 0.0);
+    Real operator()(Real x, bool allowExtrapolation=false) const;
+    Real alpha() const;
+    Real beta() const;
+    Real rho() const;
+    Real nu() const;
+};
+
 
 %{
 using QuantLib::RichardsonExtrapolation;
@@ -248,8 +333,6 @@ class RichardsonExtrapolation {
 #endif
 };
 
-#endif
-
 
 %{
 class SafeConvexMonotoneInterpolation {
@@ -281,3 +364,5 @@ class SafeConvexMonotoneInterpolation {
     Real operator()(Real x, bool allowExtrapolation=false);
 };
 
+
+#endif

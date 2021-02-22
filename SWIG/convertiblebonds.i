@@ -1,4 +1,3 @@
-
 /*
  Copyright (C) 2006, 2007 StatPro Italia srl
  Copyright (C) 2018 Matthias Lungwitz
@@ -21,7 +20,6 @@
 #define quantlib_convertible_bonds_i
 
 %include bonds.i
-%include callability.i
 %include dividends.i
 %include options.i
 
@@ -36,10 +34,10 @@ using QuantLib::BinomialConvertibleEngine;
 class ConvertibleZeroCouponBond : public Bond {
   public:
     ConvertibleZeroCouponBond(
-          const boost::shared_ptr<Exercise>& exercise,
+          const ext::shared_ptr<Exercise>& exercise,
           Real conversionRatio,
-          const std::vector<boost::shared_ptr<Dividend> >& dividends,
-          const std::vector<boost::shared_ptr<Callability> >& callability,
+          const std::vector<ext::shared_ptr<Dividend> >& dividends,
+          const std::vector<ext::shared_ptr<Callability> >& callability,
           const Handle<Quote>& creditSpread,
           const Date& issueDate,
           Integer settlementDays,
@@ -53,17 +51,21 @@ class ConvertibleZeroCouponBond : public Bond {
 class ConvertibleFixedCouponBond : public Bond {
   public:
     ConvertibleFixedCouponBond(
-          const boost::shared_ptr<Exercise>& exercise,
+          const ext::shared_ptr<Exercise>& exercise,
           Real conversionRatio,
-          const std::vector<boost::shared_ptr<Dividend> >& dividends,
-          const std::vector<boost::shared_ptr<Callability> >& callability,
+          const std::vector<ext::shared_ptr<Dividend> >& dividends,
+          const std::vector<ext::shared_ptr<Callability> >& callability,
           const Handle<Quote>& creditSpread,
           const Date& issueDate,
           Integer settlementDays,
           const std::vector<Rate>& coupons,
           const DayCounter& dayCounter,
           const Schedule& schedule,
-          Real redemption = 100.0);
+          Real redemption = 100.0,
+          const Period& exCouponPeriod = Period(),
+          const Calendar& exCouponCalendar = Calendar(),
+          const BusinessDayConvention exCouponConvention = Unadjusted,
+          bool exCouponEndOfMonth = false);
 };
 
 
@@ -71,19 +73,23 @@ class ConvertibleFixedCouponBond : public Bond {
 class ConvertibleFloatingRateBond : public Bond {
   public:
     ConvertibleFloatingRateBond(
-          const boost::shared_ptr<Exercise>& exercise,
+          const ext::shared_ptr<Exercise>& exercise,
           Real conversionRatio,
-          const std::vector<boost::shared_ptr<Dividend> >& dividends,
-          const std::vector<boost::shared_ptr<Callability> >& callability,
+          const std::vector<ext::shared_ptr<Dividend> >& dividends,
+          const std::vector<ext::shared_ptr<Callability> >& callability,
           const Handle<Quote>& creditSpread,
           const Date& issueDate,
           Integer settlementDays,
-          const boost::shared_ptr<IborIndex>& index,
+          const ext::shared_ptr<IborIndex>& index,
           Integer fixingDays,
           const std::vector<Spread>& spreads,
           const DayCounter& dayCounter,
           const Schedule& schedule,
-          Real redemption = 100.0);
+          Real redemption = 100.0,
+          const Period& exCouponPeriod = Period(),
+          const Calendar& exCouponCalendar = Calendar(),
+          const BusinessDayConvention exCouponConvention = Unadjusted,
+          bool exCouponEndOfMonth = false);
 };
 
 
@@ -98,7 +104,7 @@ class ConvertibleFloatingRateBond : public Bond {
 template <class T>
 class BinomialConvertibleEngine : public PricingEngine {
   public:
-    BinomialConvertibleEngine(const boost::shared_ptr<GeneralizedBlackScholesProcess>&,
+    BinomialConvertibleEngine(const ext::shared_ptr<GeneralizedBlackScholesProcess>&,
                               Size steps);
 };
 
