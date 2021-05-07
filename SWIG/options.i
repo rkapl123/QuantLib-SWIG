@@ -7,6 +7,7 @@
  Copyright (C) 2015 Thema Consulting SA
  Copyright (C) 2016 Gouthaman Balaraman
  Copyright (C) 2018, 2019 Matthias Lungwitz
+ Copyright (C) 2019 Pedro Coelho
 
  This file is part of QuantLib, a free-software/open-source library
  for financial quantitative analysts and developers - http://quantlib.org/
@@ -280,7 +281,9 @@ using QuantLib::AnalyticEuropeanEngine;
 %shared_ptr(AnalyticEuropeanEngine)
 class AnalyticEuropeanEngine : public PricingEngine {
   public:
-    AnalyticEuropeanEngine(const ext::shared_ptr<GeneralizedBlackScholesProcess>&);
+    AnalyticEuropeanEngine(const ext::shared_ptr<GeneralizedBlackScholesProcess>& process);
+    AnalyticEuropeanEngine(const ext::shared_ptr<GeneralizedBlackScholesProcess>& process,
+                           const Handle<YieldTermStructure>& discountCurve);
 };
 
 
@@ -989,6 +992,7 @@ class FdmQuantoHelper {
 %{
 using QuantLib::LocalVolTermStructure;
 using QuantLib::FdBlackScholesVanillaEngine;
+using QuantLib::FdBlackScholesShoutEngine;
 using QuantLib::FdOrnsteinUhlenbeckVanillaEngine;
 using QuantLib::FdBatesVanillaEngine;
 using QuantLib::FdHestonVanillaEngine;
@@ -1036,6 +1040,15 @@ class FdBlackScholesVanillaEngine : public PricingEngine {
         }
     }
     #endif
+};
+
+%shared_ptr(FdBlackScholesShoutEngine)
+class FdBlackScholesShoutEngine : public PricingEngine {
+  public:
+    FdBlackScholesShoutEngine(
+        const ext::shared_ptr<GeneralizedBlackScholesProcess>& process,
+        Size tGrid = 100, Size xGrid = 100, Size dampingSteps = 0,
+        const FdmSchemeDesc& schemeDesc = FdmSchemeDesc::Douglas());
 };
 
 %shared_ptr(FdOrnsteinUhlenbeckVanillaEngine)

@@ -336,7 +336,8 @@ class OvernightIndexedSwap : public Swap {
             Natural paymentLag = 0,
             BusinessDayConvention paymentAdjustment = Following,
             Calendar paymentCalendar = Calendar(),
-            bool telescopicValueDates = false);
+            bool telescopicValueDates = false,
+            RateAveraging::Type averagingMethod = RateAveraging::Compound);
     
     OvernightIndexedSwap(
             OvernightIndexedSwap::Type type,
@@ -349,8 +350,8 @@ class OvernightIndexedSwap : public Swap {
             Natural paymentLag = 0,
             BusinessDayConvention paymentAdjustment = Following,
             Calendar paymentCalendar = Calendar(),
-            bool telescopicValueDates = false);
-
+            bool telescopicValueDates = false,
+            RateAveraging::Type averagingMethod = RateAveraging::Compound);
 
     Rate fixedLegBPS();
     Real fixedLegNPV();
@@ -368,6 +369,7 @@ class OvernightIndexedSwap : public Swap {
     Spread spread();
     const Leg& fixedLeg();
     const Leg& overnightLeg();
+    RateAveraging::Type averagingMethod();
 };
 
 #if defined(SWIGPYTHON)
@@ -403,6 +405,7 @@ class MakeOIS {
         MakeOIS& withDiscountingTermStructure(
                   const Handle<YieldTermStructure>& discountingTermStructure);
         MakeOIS& withTelescopicValueDates(bool telescopicValueDates);
+        MakeOIS& withAveragingMethod(RateAveraging::Type averagingMethod);
         MakeOIS& withPricingEngine(
                               const ext::shared_ptr<PricingEngine>& engine);
 };
@@ -426,7 +429,8 @@ def MakeOIS(swapTenor, overnightIndex, fixedRate, fwdStart=Period(0, Days),
             overnightLegSpread=0.0,
             discountingTermStructure=None,
             telescopicValueDates=False,
-            pricingEngine=None):
+            pricingEngine=None,
+            averagingMethod=None):
 
     mv = _MakeOIS(swapTenor, overnightIndex, fixedRate, fwdStart)
     
@@ -464,6 +468,8 @@ def MakeOIS(swapTenor, overnightIndex, fixedRate, fwdStart=Period(0, Days),
         mv.withDiscountingTermStructure(discountingTermStructure)        
     if telescopicValueDates:
         mv.withTelescopicValueDates(telescopicValueDates)
+    if averagingMethod is not None:
+        mv.withAveragingMethod(averagingMethod)
     if pricingEngine is not None:
         mv.withPricingEngine(pricingEngine)
 
@@ -481,7 +487,8 @@ class OvernightIndexedSwapIndex : public SwapIndex {
               Natural settlementDays,
               Currency currency,
               const ext::shared_ptr<OvernightIndex>& overnightIndex,
-              bool telescopicValueDates = false);
+              bool telescopicValueDates = false,
+              RateAveraging::Type averagingMethod = RateAveraging::Compound);
     //! \name Inspectors
     //@{
     ext::shared_ptr<OvernightIndex> overnightIndex() const;
